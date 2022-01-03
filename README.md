@@ -2,13 +2,15 @@
 
 This repository contains the code and schematic for a project involving the modern [MCS-4 Development Kit](https://www.cpushack.com/mcs-4-test-boards-for-sale/) using an Intel 4004 CPU to display "Intel 4004 Says Happy 2022." on a common-anode 7-segment LED display.
 
-Why use the Intel 4004?  Released in 1971, it was the **first microprocessor** produced by Intel, and arguably the first microprocessor ever made available for sale to the general public.  In the preview below, it is the 16-pin plastic DIP chip in the far lower right ZIF socket.  My 4004 chip has a date code of 7804, indicating that it was made during the fourth week of 1978.
+Why use the Intel 4004?  Released in 1971, it was the **first microprocessor** produced by Intel, and arguably the first microprocessor ever made available for sale to the general public.  Since 2021 was its 50th anniversary, I wanted to commemorate that, but the project ended up running into New Year's Day 2022. Anyway, in the preview below, it is the 16-pin plastic DIP chip in the far lower right ZIF socket.  My 4004 chip has a date code of 7804, indicating that it was made during the fourth week of 1978.
 
 ## Preview
 
 ![Video of Intel 4004 Happy New Year message, also showing full board and breadboard wiring](4004-board.gif)
 
 ## Schematic
+
+_I find your lack of resistors disturbing_ (but this is explained later)
 
 ![Schematic for this project](Intel%204004%20Happy%202022.png)
 
@@ -44,10 +46,17 @@ The program takes up 102 bytes of ROM, from 0x00 through 0x66.  Data for the mes
 
 The program is kept short by also rotating the "desired LED output pattern" kept in R12 for one nybble from 0x7 to 0xB to 0xD to 0xE.  Once the 0 is rotated out, it ends up as the "Carry" bit, where we can detect it and then run instructions to find out what to do next -- either load the next nybble in the character data, or go on to check the status of our delay counter.
 
-For the first nybble of character data, 0 is loaded into R13.  Then, when the Carry bit becomes 0 as described above, the program checks for the value of R13.  If it is found to be zero (i.e. the Zero flag is set after loading the register into the accumulator), then the other nybble of data is loaded into R15, R12 is reinstantiated as 0x7, and R13 is reinstantiated as all 1's  Next time the carry bit from rotating R12 becomes 0, and R13 is seen to be all 1's, the program stops messing with character data for a bit to check the delay counter.
+For the first nybble of character data, 0 is loaded into R13.  Then, when the Carry bit becomes 0 as described above, the program checks for the value of R13.  If it is found to be zero (i.e. the Zero flag is set after loading the register into the accumulator), then the other nybble of data is loaded into R15, R12 is reinstantiated as 0x7, and R13 is reinstantiated as all 1's.  Next time the carry bit from rotating R12 becomes 0, and R13 is seen to be all 1's, the program stops messing with character data for a bit to check the delay counter.
 
 In order for a character to register as visible to the human eye, it must be drawn several times before the next character is rendered.  Otherwise, the display will show an "8" with different vanes showing different brightnesses depending on what characters have been shown recently.  As such, registers R8 and R9 govern how many times the same character is rendered.  In this code, both start out as 0, and both get incremented until both roll to 0 again.  This means the character is drawn 256 times before it changes.  There is also a "FLASH" segment after each letter is drawn that clears all LED segments so it appears blank.  This gets iterated 64 times, and its purpose is to give the viewer the essence of changing characters, even if the same character gets repeated multiple times, so they know the next data was rendered.  However, this effect does not show up on-camera, so this delay would need to be increased by initializing R8 to a lower value so that it gets iterated more times. 
 
 ## Potential Improvement
 
 The LED output is rather dim when seen in-person.  The video looks good, but it's worth noting that no resistors are in series with the 7-segment display, thus they cannot be made to shine any brighter.  In order to brighten up the display, one could consider using a 74HC373 or 74HC573 latch, or even a 74HC161 4-bit counter/latch, then writing the desired LED output pattern to the I/O port, and then setting the chip select line active for the desired latch chip so that the latch can store the desired pattern while the CPU goes on to calculate other things.  This way, the LED duty cycle might become higher, thus brightening up the display.  However, it is not apparent where the LEDs stop getting driven in a particular pattern -- that is to say, they should be on at full duty cycle anyway.
+
+## Special Thanks to these helpful resources
+
+* http://www.e4004.szyc.org/ - Features an Intel 4004 assembler, disassembler, simulator, and an overview of the instruction set
+* http://bitsavers.trailing-edge.com/components/intel/MCS4/MCS-4_Assembly_Language_Programming_Manual_Dec73.pdf - Deep dive into the instruction set
+* https://www.cpu-world.com/forum/profile.php?mode=viewprofile&u=1895 - The fellow who made the MCS-4 development board, and also personally provided me with schematics and the assembly code for the test program
+* https://4apedia.com/index.php/Paul_Urbanus - Gave me an EEPROM to substantially speed up development time, carefully soldered pull-down resistors onto the back of the MCS-4's ROM socket so as not to drive the CMOS ROM crazy with unconnected lines, and gave me moral support (including, but not limited to, beer) to go forth with this project!
