@@ -50,7 +50,19 @@ For the first nybble of character data, 0 is loaded into R13.  Then, when the Ca
 
 In order for a character to register as visible to the human eye, it must be drawn several times before the next character is rendered.  Otherwise, the display will show an "8" with different vanes showing different brightnesses depending on what characters have been shown recently.  As such, registers R8 and R9 govern how many times the same character is rendered.  In this code, both start out as 0, and both get incremented until both roll to 0 again.  This means the character is drawn 256 times before it changes.  There is also a "FLASH" segment after each letter is drawn that clears all LED segments so it appears blank.  This gets iterated 64 times, and its purpose is to give the viewer the essence of changing characters, even if the same character gets repeated multiple times, so they know the next data was rendered.  However, this effect does not show up on-camera, so this delay would need to be increased by initializing R8 to a lower value so that it gets iterated more times. 
 
-## Potential Improvement
+## Learnings about the Intel 4004
+
+The instruction set is quite primitive compared to even the next generation of CPUs.  It's fairly simple and not too hard to wrap your head around the whole instruction set.  The interesting part is trying to compensate for what it lacks.
+
+* There are several instructions we have come to expect and rely on nowadays, such as comparisons, binary shifts, and even storing a value back into a register, that simply don't exist on this processor.  One can implement these with workarounds, of course, but there could be some unexpected pitfalls in doing so.  For instance, one can "exchange" the accumulator with a register, but if you want the value in both places, you'll have to re-`LD` it into the accumulator from the register.
+* You can't reference a register from another register; that is, you can't put the value `7` into R4, run something such as `LD (R4)`, and load the value of R7 instead.
+* You can't return from a subroutine without changing the value in the accumuator to an immediate value -- not even a register value can be substituted.
+* There are also no instructions to manipulate the stack pointers (besides `JMS` and `BBL` with its annoying side effect), so you can't just go around popping them and putting the value into the program counter like you could on an x86.
+* The subtract math is done with 1s complement rather than 2s complement.  This means there exists a 0 and -0, and so you can't just check for the accumulator to be zero; you have to add 1 to it and also see if that is zero, but then that might have been a valid answer that you just invalidated.  I don't know, it made my head spin, so I'm sticking with "faking" 2s complement in this machine where needed.
+
+That said, there are some special instructions this CPU has that don't seem to exist in some of the other architectures; for instance, facilitating building multi-digit adders and subtractors, and even handling things like regrouping if a register value goes over 10 rather than over 16.  Some of these are cool, but others of these seem to be of questionable value, especially if they had just implemented some of the instructions we know & love nowadays instead.
+
+## Potential Improvement to this Circuit
 
 The LED output is rather dim when seen in-person.  The video looks good, but it's worth noting that no resistors are in series with the 7-segment display, thus they cannot be made to shine any brighter.  In order to brighten up the display, one could consider using a 74HC373 or 74HC573 latch, or even a 74HC161 4-bit counter/latch, then writing the desired LED output pattern to the I/O port, and then setting the chip select line active for the desired latch chip so that the latch can store the desired pattern while the CPU goes on to calculate other things.  This way, the LED duty cycle might become higher, thus brightening up the display.  However, it is not apparent where the LEDs stop getting driven in a particular pattern -- that is to say, they should be on at full duty cycle anyway.
 
