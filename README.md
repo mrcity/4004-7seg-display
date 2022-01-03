@@ -2,6 +2,8 @@
 
 This repository contains the code and schematic for a project involving the modern [MCS-4 Development Kit](https://www.cpushack.com/mcs-4-test-boards-for-sale/) using an Intel 4004 CPU to display "Intel 4004 Says Happy 2022." on a common-anode 7-segment LED display.
 
+Why use the Intel 4004?  Released in 1971, it was the **first microprocessor** produced by Intel, and arguably the first microprocessor ever made available for sale to the general public.  In the preview below, it is the 16-pin plastic DIP chip in the far lower right ZIF socket.  My 4004 chip has a date code of 7804, indicating that it was made during the fourth week of 1978.
+
 ## Preview
 
 ![Video of Intel 4004 Happy New Year message, also showing full board and breadboard wiring](4004-board.gif)
